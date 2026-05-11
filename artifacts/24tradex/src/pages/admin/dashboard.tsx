@@ -103,10 +103,10 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="glass-panel border-l-4 border-l-yellow-500">
+        <Card className="glass-panel border-l-4 border-l-blue-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Pending Purchases</CardTitle>
-            <Clock className="h-4 w-4 text-yellow-500" />
+            <Clock className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
             {isLoading ? <Skeleton className="h-8 w-[120px]" /> : (
@@ -117,10 +117,10 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
         
-        <Card className="glass-panel border-l-4 border-l-yellow-500">
+        <Card className="glass-panel border-l-4 border-l-blue-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Pending Withdrawals</CardTitle>
-            <Clock className="h-4 w-4 text-yellow-500" />
+            <Clock className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
             {isLoading ? <Skeleton className="h-8 w-[120px]" /> : (

@@ -117,7 +117,7 @@ export default function AdminPurchases() {
                       <TableCell>
                          {purchase.status === 'approved' && <Badge className="bg-green-500/20 text-green-500 border-none">Approved</Badge>}
                          {purchase.status === 'rejected' && <Badge variant="destructive" className="bg-red-500/20 text-red-500 border-none">Rejected</Badge>}
-                         {purchase.status === 'pending' && <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-500 border-none">Pending</Badge>}
+                         {purchase.status === 'pending' && <Badge variant="secondary" className="bg-blue-500/20 text-blue-500 border-none">Pending</Badge>}
                       </TableCell>
                       <TableCell className="text-right">
                         {purchase.status === 'pending' && (

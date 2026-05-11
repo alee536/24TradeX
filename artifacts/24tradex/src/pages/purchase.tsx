@@ -76,7 +76,7 @@ export default function Purchase() {
     switch(status) {
       case 'approved': return <Badge className="bg-green-500/20 text-green-500 border-green-500/50"><CheckCircle2 className="w-3 h-3 mr-1"/> Approved</Badge>;
       case 'rejected': return <Badge variant="destructive" className="bg-red-500/20 text-red-500 border-red-500/50"><XCircle className="w-3 h-3 mr-1"/> Rejected</Badge>;
-      default: return <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-500 border-yellow-500/50"><Clock className="w-3 h-3 mr-1"/> Pending</Badge>;
+      default: return <Badge variant="secondary" className="bg-blue-500/20 text-blue-500 border-blue-500/50"><Clock className="w-3 h-3 mr-1"/> Pending</Badge>;
     }
   };
 

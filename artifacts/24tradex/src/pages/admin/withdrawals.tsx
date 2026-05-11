@@ -118,7 +118,7 @@ export default function AdminWithdrawals() {
                       <TableCell>
                          {withdrawal.status === 'approved' && <Badge className="bg-green-500/20 text-green-500 border-none">Approved</Badge>}
                          {withdrawal.status === 'rejected' && <Badge variant="destructive" className="bg-red-500/20 text-red-500 border-none">Rejected</Badge>}
-                         {withdrawal.status === 'pending' && <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-500 border-none">Pending</Badge>}
+                         {withdrawal.status === 'pending' && <Badge variant="secondary" className="bg-blue-500/20 text-blue-500 border-none">Pending</Badge>}
                       </TableCell>
                       <TableCell className="text-right">
                         {withdrawal.status === 'pending' && (

@@ -73,33 +73,33 @@ export default function Login() {
         <div
           className="absolute inset-0 opacity-[0.04]"
           style={{
-            backgroundImage: `linear-gradient(rgba(245,158,11,0.6) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(245,158,11,0.6) 1px, transparent 1px)`,
+            backgroundImage: `linear-gradient(rgba(59,130,246,0.6) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(59,130,246,0.6) 1px, transparent 1px)`,
             backgroundSize: "60px 60px",
           }}
         />
         {/* Glow */}
         <div className="absolute top-1/3 left-1/4 w-96 h-96 rounded-full opacity-10"
-          style={{ background: "radial-gradient(circle, #f59e0b, transparent 70%)", filter: "blur(60px)" }} />
+          style={{ background: "radial-gradient(circle, #3b82f6, transparent 70%)", filter: "blur(60px)" }} />
 
         {/* Logo */}
         <div className="relative z-10 flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm"
-            style={{ background: "#f59e0b", color: "#070b14" }}>24</div>
+            style={{ background: "#3b82f6", color: "#ffffff" }}>24</div>
           <span className="text-white font-bold text-xl tracking-wide">24TradeX</span>
         </div>
 
         {/* Center content */}
         <div className="relative z-10 flex-1 flex flex-col justify-center py-12">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-8 w-fit"
-            style={{ background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.3)", color: "#f59e0b" }}>
+            style={{ background: "rgba(59,130,246,0.12)", border: "1px solid rgba(59,130,246,0.3)", color: "#3b82f6" }}>
             <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
             Platform Live — Trade Now
           </div>
 
           <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight mb-4">
             Grow Your Wealth with{" "}
-            <span style={{ color: "#f59e0b" }}>Smart Crypto</span>{" "}
+            <span style={{ color: "#3b82f6" }}>Smart Crypto</span>{" "}
             Trading
           </h1>
           <p className="text-gray-400 text-lg mb-10 leading-relaxed">
@@ -110,8 +110,8 @@ export default function Login() {
             {features.map(({ icon: Icon, text }) => (
               <div key={text} className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ background: "rgba(245,158,11,0.12)", border: "1px solid rgba(245,158,11,0.2)" }}>
-                  <Icon className="w-4 h-4" style={{ color: "#f59e0b" }} />
+                  style={{ background: "rgba(59,130,246,0.12)", border: "1px solid rgba(59,130,246,0.2)" }}>
+                  <Icon className="w-4 h-4" style={{ color: "#3b82f6" }} />
                 </div>
                 <span className="text-gray-300 text-sm">{text}</span>
               </div>
@@ -124,7 +124,7 @@ export default function Login() {
           style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
           {stats.map(({ value, label }) => (
             <div key={label}>
-              <div className="text-xl font-bold" style={{ color: "#f59e0b" }}>{value}</div>
+              <div className="text-xl font-bold" style={{ color: "#3b82f6" }}>{value}</div>
               <div className="text-xs text-gray-500 mt-0.5">{label}</div>
             </div>
           ))}
@@ -136,7 +136,7 @@ export default function Login() {
         {/* Mobile logo */}
         <div className="absolute top-6 left-6 flex items-center gap-2 lg:hidden">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs"
-            style={{ background: "#f59e0b", color: "#070b14" }}>24</div>
+            style={{ background: "#3b82f6", color: "#ffffff" }}>24</div>
           <span className="text-white font-bold">24TradeX</span>
         </div>
 
@@ -158,7 +158,7 @@ export default function Login() {
                       <Input
                         placeholder="Enter your username"
                         {...field}
-                        className="h-12 text-white placeholder:text-gray-600 border-0 focus-visible:ring-1 focus-visible:ring-yellow-500/50"
+                        className="h-12 text-white placeholder:text-gray-600 border-0 focus-visible:ring-1 focus-visible:ring-blue-500/50"
                         style={{ background: "rgba(255,255,255,0.05)", borderRadius: "8px" }}
                         autoComplete="username"
                       />
@@ -181,7 +181,7 @@ export default function Login() {
                           type={showPass ? "text" : "password"}
                           placeholder="Enter your password"
                           {...field}
-                          className="h-12 pr-10 text-white placeholder:text-gray-600 border-0 focus-visible:ring-1 focus-visible:ring-yellow-500/50"
+                          className="h-12 pr-10 text-white placeholder:text-gray-600 border-0 focus-visible:ring-1 focus-visible:ring-blue-500/50"
                           style={{ background: "rgba(255,255,255,0.05)", borderRadius: "8px" }}
                           autoComplete="current-password"
                         />
@@ -203,7 +203,7 @@ export default function Login() {
                 type="submit"
                 className="w-full h-12 font-semibold text-sm tracking-wide transition-all duration-200 border-0 cursor-pointer"
                 style={{
-                  background: loginMutation.isPending ? "rgba(245,158,11,0.6)" : "#f59e0b",
+                  background: loginMutation.isPending ? "rgba(59,130,246,0.6)" : "#3b82f6",
                   color: "#070b14",
                   borderRadius: "8px",
                 }}
@@ -219,7 +219,7 @@ export default function Login() {
           <p className="mt-6 text-center text-sm text-gray-500">
             Don't have an account?{" "}
             <Link href="/register">
-              <span className="font-medium cursor-pointer hover:opacity-80 transition-opacity" style={{ color: "#f59e0b" }}>
+              <span className="font-medium cursor-pointer hover:opacity-80 transition-opacity" style={{ color: "#3b82f6" }}>
                 Create account
               </span>
             </Link>

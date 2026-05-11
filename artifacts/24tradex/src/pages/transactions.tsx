@@ -22,7 +22,7 @@ export default function Transactions() {
       case 'approved': return <Badge className="bg-green-500/20 text-green-500">Approved</Badge>;
       case 'rejected': return <Badge variant="destructive" className="bg-red-500/20 text-red-500">Rejected</Badge>;
       case 'completed': return <Badge className="bg-blue-500/20 text-blue-500">Completed</Badge>;
-      default: return <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-500">Pending</Badge>;
+      default: return <Badge variant="secondary" className="bg-blue-500/20 text-blue-500">Pending</Badge>;
     }
   };
 
