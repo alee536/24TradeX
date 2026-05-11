@@ -1,18 +1,20 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { 
-  LayoutDashboard, 
-  ShoppingCart, 
-  ArrowDownToLine, 
-  History, 
-  Users, 
-  UserCircle, 
-  Settings, 
+import {
+  LayoutDashboard,
+  ShoppingCart,
+  ArrowDownToLine,
+  History,
+  Users,
+  UserCircle,
+  Settings,
   LogOut,
-  ShieldAlert
+  ShieldAlert,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CryptoBackground } from "@/components/ui/crypto-background";
 
 interface SidebarItem {
   icon: React.ElementType;
@@ -47,37 +49,95 @@ export function Sidebar() {
   const allItems = user?.is_admin ? [...items, ...adminItems] : items;
 
   return (
-    <aside className="w-64 flex-shrink-0 hidden md:flex flex-col border-r border-white/10 glass-panel">
-      <div className="h-16 flex items-center px-6 border-b border-white/10">
-        <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
-          24TradeX
-        </span>
+    <aside
+      className="w-64 flex-shrink-0 hidden md:flex flex-col"
+      style={{
+        background: "linear-gradient(180deg, #060c18 0%, #070e1c 100%)",
+        borderRight: "1px solid rgba(59,130,246,0.1)",
+      }}
+    >
+      {/* Logo */}
+      <div className="h-16 flex items-center px-6 gap-3" style={{ borderBottom: "1px solid rgba(59,130,246,0.1)" }}>
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
+          style={{ background: "#3b82f6", color: "#fff" }}>24</div>
+        <span className="text-white font-bold text-lg tracking-wide">24TradeX</span>
       </div>
-      <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-        {allItems.map((item) => {
+
+      {/* Nav items */}
+      <div className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
+        {user?.is_admin && (
+          <div className="px-3 pb-2 pt-1">
+            <p className="text-xs font-semibold uppercase tracking-widest text-gray-600">Main</p>
+          </div>
+        )}
+        {items.map((item) => {
           const isActive = location === item.href;
           return (
             <Link key={item.href} href={item.href}>
               <div className={cn(
-                "flex items-center gap-3 px-3 py-2 rounded-md transition-all cursor-pointer text-sm",
-                isActive 
-                  ? "bg-primary/10 text-primary font-medium" 
-                  : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
-              )}>
-                <item.icon className="h-4 w-4" />
-                {item.label}
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all cursor-pointer text-sm group",
+                isActive
+                  ? "text-white font-medium"
+                  : "text-gray-500 hover:text-gray-200 hover:bg-white/[0.04]"
+              )}
+                style={isActive ? { background: "rgba(59,130,246,0.15)", borderLeft: "2px solid #3b82f6" } : { borderLeft: "2px solid transparent" }}
+              >
+                <item.icon className={cn("h-4 w-4 flex-shrink-0", isActive ? "text-blue-400" : "text-gray-600 group-hover:text-gray-400")} />
+                <span className="flex-1">{item.label}</span>
+                {isActive && <ChevronRight className="h-3 w-3 text-blue-400 opacity-60" />}
               </div>
             </Link>
           );
         })}
+
+        {user?.is_admin && (
+          <>
+            <div className="px-3 pb-2 pt-4">
+              <p className="text-xs font-semibold uppercase tracking-widest text-gray-600">Admin</p>
+            </div>
+            {adminItems.map((item) => {
+              const isActive = location === item.href;
+              return (
+                <Link key={item.href} href={item.href}>
+                  <div className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all cursor-pointer text-sm group",
+                    isActive
+                      ? "text-white font-medium"
+                      : "text-gray-500 hover:text-gray-200 hover:bg-white/[0.04]"
+                  )}
+                    style={isActive ? { background: "rgba(59,130,246,0.15)", borderLeft: "2px solid #3b82f6" } : { borderLeft: "2px solid transparent" }}
+                  >
+                    <item.icon className={cn("h-4 w-4 flex-shrink-0", isActive ? "text-blue-400" : "text-gray-600 group-hover:text-gray-400")} />
+                    <span className="flex-1">{item.label}</span>
+                    {isActive && <ChevronRight className="h-3 w-3 text-blue-400 opacity-60" />}
+                  </div>
+                </Link>
+              );
+            })}
+          </>
+        )}
       </div>
-      <div className="p-4 border-t border-white/10">
+
+      {/* User + Logout */}
+      <div className="p-4" style={{ borderTop: "1px solid rgba(59,130,246,0.08)" }}>
+        {user && (
+          <div className="flex items-center gap-3 px-3 py-2 mb-2 rounded-lg" style={{ background: "rgba(255,255,255,0.03)" }}>
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+              style={{ background: "rgba(59,130,246,0.2)", color: "#60a5fa" }}>
+              {user.username?.[0]?.toUpperCase() ?? "U"}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-white font-medium truncate">{user.username}</p>
+              <p className="text-xs text-gray-600 truncate">{user.is_admin ? "Administrator" : "Trader"}</p>
+            </div>
+          </div>
+        )}
         <button
           onClick={() => logout()}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-md transition-all text-sm text-destructive hover:bg-destructive/10"
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm text-gray-600 hover:text-red-400 hover:bg-red-500/10 cursor-pointer"
         >
           <LogOut className="h-4 w-4" />
-          Logout
+          Sign out
         </button>
       </div>
     </aside>
@@ -86,18 +146,30 @@ export function Sidebar() {
 
 export function AppLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex h-[100dvh] w-full overflow-hidden bg-background">
+    <div className="flex h-[100dvh] w-full overflow-hidden" style={{ background: "#070d1a" }}>
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden relative">
-        <header className="h-16 border-b border-white/10 glass-panel flex items-center px-6 sticky top-0 z-10">
-           <div className="md:hidden text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">
-              24TradeX
-           </div>
-           <div className="ml-auto flex items-center gap-4">
-              {/* User menu or notifications can go here */}
-           </div>
+        {/* Animated background behind all content */}
+        <CryptoBackground intensity={0.6} />
+
+        {/* Top bar */}
+        <header
+          className="h-16 flex items-center px-6 sticky top-0 z-20 flex-shrink-0"
+          style={{
+            background: "rgba(7,13,26,0.85)",
+            backdropFilter: "blur(12px)",
+            borderBottom: "1px solid rgba(59,130,246,0.1)",
+          }}
+        >
+          <div className="flex items-center gap-3 md:hidden">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold"
+              style={{ background: "#3b82f6", color: "#fff" }}>24</div>
+            <span className="text-white font-bold">24TradeX</span>
+          </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 relative z-0">
+
+        {/* Main content */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 relative z-10">
           <div className="max-w-7xl mx-auto h-full">
             {children}
           </div>
