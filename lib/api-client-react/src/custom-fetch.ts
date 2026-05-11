@@ -15,8 +15,13 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 // Module-level configuration
 // ---------------------------------------------------------------------------
 
-let _baseUrl: string | null = null;
-let _authTokenGetter: AuthTokenGetter | null = null;
+let _baseUrl: string | null = "/api";
+let _authTokenGetter: AuthTokenGetter | null = () => {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("24tradex_token");
+  }
+  return null;
+};
 
 /**
  * Set a base URL that is prepended to every relative request URL
