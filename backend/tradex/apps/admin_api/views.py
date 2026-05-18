@@ -268,3 +268,94 @@ def admin_stats(request):
         'pending_purchases': pending_purchases,
         'pending_withdrawals': pending_withdrawals_count,
     })
+
+
+# ---- User Details with Sponsor Hierarchy ----
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, IsAdminUser])
+def admin_user_detail(request, pk):
+    try:
+        user = User.objects.get(pk=pk)
+    except User.DoesNotExist:
+        return Response({'error': 'Not found'}, status=404)
+
+    # Get child users (sponsored by this user)
+    child_users = User.objects.filter(sponsored_by=user)
+    children_data = []
+    for child in child_users:
+        child_purchases = Purchase.objects.filter(user=child, status='approved')
+        child_withdrawals = Withdrawal.objects.filter(user=child, status='approved')
+        children_data.append({
+            'id': child.id,
+            'username': child.username,
+            'full_name': child.full_name,
+            'email': child.email,
+            'total_purchased': float(sum(p.amount for p in child_purchases)),
+            'total_withdrawn': float(sum(w.amount for w in child_withdrawals)),
+            'is_active': child.is_active,
+            'date_joined': child.date_joined.isoformat(),
+        })
+
+    # Get user's purchases
+    purchases = []
+    for p in Purchase.objects.filter(user=user).order_by('-created_at'):
+        purchases.append({
+            'id': p.id,
+            'transaction_id': p.transaction_id,
+            'amount': float(p.amount),
+            'status': p.status,
+            'created_at': p.created_at.isoformat(),
+            'approved_at': p.approved_at.isoformat() if p.approved_at else None,
+            'unlocked_amount': float(p.unlocked_amount),
+        })
+
+    # Get user's withdrawals
+    withdrawals = []
+    for w in Withdrawal.objects.filter(user=user).order_by('-created_at'):
+        withdrawals.append({
+            'id': w.id,
+            'amount': float(w.amount),
+            'status': w.status,
+            'wallet_address': w.wallet_address,
+            'created_at': w.created_at.isoformat(),
+            'approved_at': w.approved_at.isoformat() if w.approved_at else None,
+        })
+
+    # Get sponsor earnings
+    from apps.sponsor.models import SponsorEarning
+    sponsor_earnings = []
+    for e in SponsorEarning.objects.filter(sponsor=user).order_by('-created_at'):
+        sponsor_earnings.append({
+            'id': e.id,
+            'sponsored_user': e.sponsored_user.username,
+            'amount': float(e.amount),
+            'created_at': e.created_at.isoformat(),
+        })
+
+    return Response({
+        'user': {
+            'id': user.id,
+            'username': user.username,
+            'full_name': user.full_name,
+            'email': user.email,
+            'is_active': user.is_active,
+            'is_banned': user.is_banned,
+            'sponsor_code': user.sponsor_code,
+            'sponsored_by': user.sponsored_by.username if user.sponsored_by else None,
+            'sponsor_earnings': float(user.sponsor_earnings),
+            'date_joined': user.date_joined.isoformat(),
+        },
+        'statistics': {
+            'total_purchased': float(sum(p['amount'] for p in purchases if p['status'] == 'approved')),
+            'total_withdrawn': float(sum(w['amount'] for w in withdrawals if w['status'] == 'approved')),
+            'total_sponsor_earnings': float(sum(e['amount'] for e in sponsor_earnings)),
+            'child_users_count': len(children_data),
+            'pending_purchases': len([p for p in purchases if p['status'] == 'pending']),
+            'pending_withdrawals': len([w for w in withdrawals if w['status'] == 'pending']),
+        },
+        'child_users': children_data,
+        'purchases': purchases,
+        'withdrawals': withdrawals,
+        'sponsor_earnings': sponsor_earnings,
+    })

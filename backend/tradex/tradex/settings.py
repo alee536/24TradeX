@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+FRONTEND_DIR = BASE_DIR.parent.parent / 'frontend'
+FRONTEND_DIST_DIR = FRONTEND_DIR / 'dist' / 'public'
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-24tradex-dev-secret-key-change-in-production')
 
@@ -49,7 +51,8 @@ ROOT_URLCONF = 'tradex.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        # Include frontend build output so Django can serve the SPA index.html
+        'DIRS': [str(FRONTEND_DIST_DIR)],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -85,6 +88,8 @@ USE_TZ = True
 
 STATIC_URL = '/api/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+# Include frontend build assets in staticfiles search path (Vite outputs to dist/assets)
+STATICFILES_DIRS = [str(FRONTEND_DIST_DIR)]
 
 MEDIA_URL = '/api/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
