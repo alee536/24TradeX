@@ -194,3 +194,5 @@ For issues, refer to:
 - Django docs: https://docs.djangoproject.com/
 - React/Vite docs: https://vitejs.dev/
 - pnpm docs: https://pnpm.io/
+
+# 24TradeX
