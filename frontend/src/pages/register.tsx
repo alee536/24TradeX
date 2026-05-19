@@ -11,10 +11,9 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Eye, EyeOff, TrendingUp, Shield, Coins, Users, Check } from "lucide-react";
 import { CryptoBackground } from "@/components/ui/crypto-background";
-import { Logo } from "@/components/ui/logo";
 
 const registerSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters"),
+  username: z.string().min(1, "Display name is required"),
   full_name: z.string().min(2, "Full name is required"),
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
@@ -86,9 +85,10 @@ export default function Register() {
     const submitData = { ...rest, sponsor_code: rest.sponsor_code || undefined };
     registerMutation.mutate({ data: submitData }, {
       onSuccess: (res) => {
+        console.log('register success response:', res);
         login(res);
         toast({ title: "Welcome to 24TRADEX!", description: "Your account has been created." });
-        setLocation("/");
+        setTimeout(() => setLocation("/user/dashboard"), 50);
       },
       onError: (err: any) => {
         toast({
@@ -112,11 +112,6 @@ export default function Register() {
       >
         <CryptoBackground intensity={0.9} />
 
-        {/* Logo */}
-        <div className="relative z-10">
-          <Logo variant="desktop" />
-        </div>
-
         {/* Center content */}
         <div className="relative z-10 flex-1 flex flex-col justify-center py-10">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-8 w-fit"
@@ -125,7 +120,7 @@ export default function Register() {
             Join the Elite Network
           </div>
 
-          <h1 className="text-3xl xl:text-4xl font-bold text-white leading-tight mb-4">
+          <h1 className="text-lg font-bold text-white leading-tight mb-4">
             Start Your{" "}
             <span style={{ color: "#60a5fa" }}>Crypto Trading</span>{" "}
             Journey Today
@@ -163,11 +158,6 @@ export default function Register() {
       <div className="flex-1 flex items-center justify-center p-6 lg:p-12 relative overflow-y-auto">
         <CryptoBackground intensity={0.4} />
 
-        {/* Mobile logo */}
-        <div className="absolute top-6 left-6 lg:hidden z-10">
-          <Logo variant="mobile" />
-        </div>
-
         <div className="w-full max-w-md py-12 lg:py-0 relative z-10">
           <div className="mb-7">
             <h2 className="text-2xl font-bold text-white mb-1">Create your account</h2>
@@ -181,10 +171,11 @@ export default function Register() {
                 <FormField control={form.control} name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-gray-400 text-xs uppercase tracking-wider">Username</FormLabel>
+                      <FormLabel className="text-gray-400 text-xs uppercase tracking-wider">Display Name / Username</FormLabel>
                       <FormControl>
-                        <Input placeholder="johndoe" {...field} className={inputCls} style={inputStyle} autoComplete="username" />
+                        <Input placeholder="Any name you like" {...field} className={inputCls} style={inputStyle} autoComplete="nickname" />
                       </FormControl>
+                      <p className="text-xs text-gray-500">This name can repeat. Login uses email and password.</p>
                       <FormMessage className="text-xs" />
                     </FormItem>
                   )}

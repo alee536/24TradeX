@@ -10,6 +10,7 @@ import { Loader2 } from "lucide-react";
 // Pages
 import Login from "@/pages/login";
 import Register from "@/pages/register";
+import Home from "@/pages/home";
 import Dashboard from "@/pages/dashboard";
 import Purchase from "@/pages/purchase";
 import Withdraw from "@/pages/withdraw";
@@ -17,15 +18,6 @@ import Transactions from "@/pages/transactions";
 import Sponsor from "@/pages/sponsor";
 import Profile from "@/pages/profile";
 import Settings from "@/pages/settings";
-
-// Admin Pages
-import AdminDashboard from "@/pages/admin/dashboard";
-import AdminUsers from "@/pages/admin/users";
-import AdminUserDetail from "@/pages/admin/user-detail";
-import AdminPurchases from "@/pages/admin/purchases";
-import AdminWithdrawals from "@/pages/admin/withdrawals";
-import AdminSettings from "@/pages/admin/settings";
-import AdminSponsor from "@/pages/admin/sponsor";
 
 import NotFound from "@/pages/not-found";
 
@@ -41,15 +33,16 @@ const queryClient = new QueryClient({
 function ProtectedRoute({ component: Component, requireAdmin }: { component: any, requireAdmin?: boolean }) {
   const { isAuthenticated, isLoading, user } = useAuth();
   const [, setLocation] = useLocation();
+  const isAdminUser = !!(user as any)?.is_admin || !!(user as any)?.is_staff || !!(user as any)?.is_superuser;
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       setLocation("/login");
     }
-    if (!isLoading && isAuthenticated && requireAdmin && !user?.is_admin) {
+    if (!isLoading && isAuthenticated && requireAdmin && !isAdminUser) {
       setLocation("/");
     }
-  }, [isLoading, isAuthenticated, requireAdmin, user, setLocation]);
+  }, [isLoading, isAuthenticated, requireAdmin, isAdminUser, setLocation]);
 
   if (isLoading) {
     return (
@@ -63,7 +56,7 @@ function ProtectedRoute({ component: Component, requireAdmin }: { component: any
     return null;
   }
 
-  if (requireAdmin && !user?.is_admin) {
+  if (requireAdmin && !isAdminUser) {
     return null;
   }
 
@@ -80,35 +73,15 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
 
-      {/* Admin Routes (checked before user root) */}
-      <Route path="/admin/users/:id">
-        <ProtectedRoute component={AdminUserDetail} requireAdmin={true} />
-      </Route>
-      <Route path="/admin/users">
-        <ProtectedRoute component={AdminUsers} requireAdmin={true} />
-      </Route>
-      <Route path="/admin/purchases">
-        <ProtectedRoute component={AdminPurchases} requireAdmin={true} />
-      </Route>
-      <Route path="/admin/withdrawals">
-        <ProtectedRoute component={AdminWithdrawals} requireAdmin={true} />
-      </Route>
-      <Route path="/admin/settings">
-        <ProtectedRoute component={AdminSettings} requireAdmin={true} />
-      </Route>
-      <Route path="/admin/sponsor">
-        <ProtectedRoute component={AdminSponsor} requireAdmin={true} />
-      </Route>
-      <Route path="/admin/dashboard">
-        <ProtectedRoute component={AdminDashboard} requireAdmin={true} />
-      </Route>
-      <Route path="/admin">
-        <ProtectedRoute component={AdminDashboard} requireAdmin={true} />
-      </Route>
-
       {/* Protected User Routes */}
       <Route path="/purchase">
         <ProtectedRoute component={Purchase} />
+      </Route>
+      <Route path="/user/home/">
+        <ProtectedRoute component={Dashboard} />
+      </Route>
+      <Route path="/user/home">
+        <ProtectedRoute component={Dashboard} />
       </Route>
       <Route path="/user/dashboard/">
         <ProtectedRoute component={Dashboard} />
@@ -137,9 +110,6 @@ function Router() {
       <Route path="/settings">
         <ProtectedRoute component={Settings} />
       </Route>
-      <Route path="/">
-        <ProtectedRoute component={Dashboard} />
-      </Route>
 
       {/* Catch all */}
       <Route component={NotFound} />
@@ -153,7 +123,12 @@ function App() {
       <TooltipProvider>
         <AuthProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <Router />
+            <Switch>
+              <Route path="/">
+                <ProtectedRoute component={Home} />
+              </Route>
+              <Router />
+            </Switch>
           </WouterRouter>
           <Toaster />
         </AuthProvider>

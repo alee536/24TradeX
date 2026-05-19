@@ -1,0 +1,895 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TRADEX — Next-Gen Crypto Exchange</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Syne:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary:    #0a0e1a;
+      --bg-secondary:  #0d1225;
+      --bg-card:       #111827;
+      --bg-card-hover: #141d2e;
+      --accent-blue:   #2d7fff;
+      --accent-cyan:   #00d4ff;
+      --accent-green:  #00f5a0;
+      --accent-purple: #7c4dff;
+      --text-primary:  #e8f0fe;
+      --text-secondary:#8899bb;
+      --text-muted:    #4a5878;
+      --border:        rgba(45,127,255,0.15);
+      --border-bright: rgba(45,127,255,0.4);
+      --glow-blue:     0 0 40px rgba(45,127,255,0.25);
+      --glow-cyan:     0 0 30px rgba(0,212,255,0.2);
+      --sidebar-w:     240px;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      font-family: 'Syne', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ═══════════════════════════════════════
+       LAYOUT: logged-out vs logged-in
+    ═══════════════════════════════════════ */
+    body.logged-in {
+      zoom: 0.90;    /* shrink to 90% as requested */
+    }
+
+    /* ═══════════════════════════════════════
+       PUBLIC NAVBAR (logged-out only)
+    ═══════════════════════════════════════ */
+    .public-navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: 68px;
+      background: rgba(10,14,26,0.92);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 48px;
+      gap: 32px;
+    }
+    .public-navbar .logo {
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'Orbitron', monospace;
+      font-weight: 900; font-size: 1.3rem;
+      color: var(--accent-cyan);
+      text-decoration: none;
+      letter-spacing: 2px;
+    }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; font-weight: 900;
+      color: #fff;
+    }
+    .public-navbar nav {
+      display: flex; align-items: center; gap: 28px;
+      margin-left: 48px; flex: 1;
+    }
+    .public-navbar nav a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.875rem; font-weight: 500;
+      letter-spacing: 0.5px;
+      transition: color 0.2s;
+    }
+    .public-navbar nav a:hover { color: var(--accent-cyan); }
+    .nav-actions {
+      display: flex; align-items: center; gap: 12px;
+      margin-left: auto;
+    }
+    .btn-ghost {
+      padding: 8px 20px;
+      border: 1px solid var(--border-bright);
+      border-radius: 6px;
+      color: var(--accent-blue);
+      background: transparent;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.875rem; font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn-ghost:hover {
+      background: rgba(45,127,255,0.1);
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+    }
+    .btn-primary {
+      padding: 8px 22px;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+      border: none; border-radius: 6px;
+      color: #fff;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.875rem; font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      letter-spacing: 0.5px;
+      transition: all 0.2s;
+      box-shadow: 0 4px 20px rgba(45,127,255,0.3);
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 28px rgba(45,127,255,0.45);
+    }
+
+    /* ═══════════════════════════════════════
+       SIDEBAR (logged-in only)
+    ═══════════════════════════════════════ */
+    .sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0;
+      width: var(--sidebar-w);
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      padding: 24px 0;
+      z-index: 100;
+    }
+    .sidebar-logo {
+      display: flex; align-items: center; gap: 10px;
+      padding: 0 20px 24px;
+      border-bottom: 1px solid var(--border);
+      font-family: 'Orbitron', monospace;
+      font-weight: 900; font-size: 1.1rem;
+      color: var(--accent-cyan);
+      letter-spacing: 2px;
+    }
+    .sidebar nav { padding: 16px 0; flex: 1; }
+    .sidebar nav a {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 20px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem; font-weight: 500;
+      transition: all 0.2s;
+      border-left: 3px solid transparent;
+    }
+    .sidebar nav a:hover,
+    .sidebar nav a.active {
+      color: var(--accent-cyan);
+      background: rgba(45,127,255,0.08);
+      border-left-color: var(--accent-blue);
+    }
+    .sidebar nav a .icon { font-size: 1.1rem; width: 22px; text-align: center; }
+    .sidebar-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+    }
+    .sidebar-footer a {
+      display: flex; align-items: center; gap: 10px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: color 0.2s;
+    }
+    .sidebar-footer a:hover { color: #ff5c7a; }
+
+    /* ═══════════════════════════════════════
+       MAIN CONTENT WRAPPER
+    ═══════════════════════════════════════ */
+    .main-content {
+      min-height: 100vh;
+    }
+    body.logged-in .main-content {
+      margin-left: var(--sidebar-w);
+    }
+    body:not(.logged-in) .main-content {
+      padding-top: 68px;
+    }
+
+    /* ═══════════════════════════════════════
+       HERO SECTION
+    ═══════════════════════════════════════ */
+    .hero {
+      position: relative;
+      min-height: calc(100vh - 68px);
+      display: flex; align-items: center;
+      padding: 80px 64px;
+      overflow: hidden;
+    }
+    body.logged-in .hero {
+      min-height: 90vh;
+      padding: 60px 48px;
+    }
+
+    /* Animated grid background */
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(45,127,255,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(45,127,255,0.06) 1px, transparent 1px);
+      background-size: 48px 48px;
+      animation: gridMove 20s linear infinite;
+    }
+    @keyframes gridMove {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(48px); }
+    }
+
+    /* Glowing orbs */
+    .hero::after {
+      content: '';
+      position: absolute;
+      width: 600px; height: 600px;
+      top: -100px; right: -100px;
+      background: radial-gradient(circle, rgba(45,127,255,0.12) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .orb-2 {
+      position: absolute;
+      width: 400px; height: 400px;
+      bottom: -80px; left: 20%;
+      background: radial-gradient(circle, rgba(0,212,255,0.08) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative; z-index: 2;
+      max-width: 620px;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(45,127,255,0.1);
+      border: 1px solid rgba(45,127,255,0.3);
+      border-radius: 999px;
+      padding: 6px 16px;
+      font-size: 0.75rem; font-weight: 600;
+      color: var(--accent-cyan);
+      letter-spacing: 1px; text-transform: uppercase;
+      margin-bottom: 28px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .badge-dot {
+      width: 6px; height: 6px;
+      background: var(--accent-green);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50% { opacity:0.4; transform:scale(0.7); }
+    }
+
+    .hero h1 {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(2.2rem, 4.5vw, 3.8rem);
+      font-weight: 900;
+      line-height: 1.1;
+      letter-spacing: -0.5px;
+      margin-bottom: 20px;
+    }
+    .hero h1 span {
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-bottom: 40px;
+      max-width: 500px;
+    }
+    .hero-cta {
+      display: flex; gap: 16px; align-items: center; flex-wrap: wrap;
+    }
+    .btn-hero {
+      padding: 14px 32px;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+      border: none; border-radius: 8px;
+      color: #fff;
+      font-family: 'Orbitron', monospace;
+      font-size: 0.85rem; font-weight: 700;
+      cursor: pointer; text-decoration: none;
+      letter-spacing: 1px;
+      transition: all 0.25s;
+      box-shadow: 0 6px 30px rgba(45,127,255,0.4);
+    }
+    .btn-hero:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 40px rgba(45,127,255,0.55);
+    }
+    .btn-hero-outline {
+      padding: 14px 32px;
+      border: 1px solid var(--border-bright);
+      border-radius: 8px;
+      color: var(--accent-cyan);
+      background: transparent;
+      font-family: 'Orbitron', monospace;
+      font-size: 0.85rem; font-weight: 700;
+      cursor: pointer; text-decoration: none;
+      letter-spacing: 1px;
+      transition: all 0.25s;
+    }
+    .btn-hero-outline:hover {
+      background: rgba(45,127,255,0.08);
+      border-color: var(--accent-cyan);
+    }
+
+    /* HERO STATS */
+    .hero-stats {
+      position: absolute; right: 64px; top: 50%;
+      transform: translateY(-50%);
+      z-index: 2;
+      display: flex; flex-direction: column; gap: 16px;
+      width: 320px;
+    }
+    body.logged-in .hero-stats { right: 48px; }
+
+    .stat-card {
+      background: rgba(17,24,39,0.85);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 22px;
+      backdrop-filter: blur(12px);
+      transition: all 0.3s;
+      cursor: default;
+    }
+    .stat-card:hover {
+      border-color: var(--border-bright);
+      box-shadow: var(--glow-blue);
+      transform: translateX(-4px);
+    }
+    .stat-label {
+      font-size: 0.7rem; font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 1.5px; text-transform: uppercase;
+      font-family: 'JetBrains Mono', monospace;
+      margin-bottom: 6px;
+    }
+    .stat-value {
+      font-family: 'Orbitron', monospace;
+      font-size: 1.4rem; font-weight: 700;
+      color: var(--accent-cyan);
+    }
+    .stat-change {
+      font-size: 0.75rem;
+      color: var(--accent-green);
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 2px;
+    }
+    .stat-change.down { color: #ff5c7a; }
+
+    /* Live ticker bar */
+    .ticker-bar {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      border-top: 1px solid var(--border);
+      padding: 10px 0;
+      overflow: hidden;
+      position: relative;
+    }
+    .ticker-inner {
+      display: flex; gap: 0;
+      animation: ticker 30s linear infinite;
+      width: max-content;
+    }
+    .ticker-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 0 36px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      border-right: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .ticker-symbol { color: var(--text-primary); font-weight: 600; }
+    .ticker-price { color: var(--accent-cyan); }
+    .ticker-up { color: var(--accent-green); }
+    .ticker-down { color: #ff5c7a; }
+    @keyframes ticker {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* ═══════════════════════════════════════
+       FEATURES SECTION
+    ═══════════════════════════════════════ */
+    .section {
+      padding: 80px 64px;
+    }
+    body.logged-in .section { padding: 60px 48px; }
+
+    .section-header {
+      text-align: center; margin-bottom: 56px;
+    }
+    .section-tag {
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem; font-weight: 600;
+      color: var(--accent-blue);
+      letter-spacing: 2px; text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .section-header h2 {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .section-header h2 span {
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px 26px;
+      transition: all 0.3s;
+      position: relative; overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent-blue), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .feature-card:hover {
+      border-color: var(--border-bright);
+      transform: translateY(-4px);
+      box-shadow: var(--glow-blue);
+      background: var(--bg-card-hover);
+    }
+    .feature-card:hover::before { opacity: 1; }
+
+    .feature-icon {
+      width: 52px; height: 52px;
+      background: linear-gradient(135deg, rgba(45,127,255,0.15), rgba(0,212,255,0.1));
+      border: 1px solid rgba(45,127,255,0.3);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+      margin-bottom: 18px;
+    }
+    .feature-card h3 {
+      font-family: 'Orbitron', monospace;
+      font-size: 0.95rem; font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 10px; letter-spacing: 0.5px;
+    }
+    .feature-card p {
+      font-size: 0.85rem; color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* ═══════════════════════════════════════
+       HOW IT WORKS
+    ═══════════════════════════════════════ */
+    .steps-section {
+      padding: 80px 64px;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    body.logged-in .steps-section { padding: 60px 48px; }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 32px; margin-top: 48px;
+    }
+    .step {
+      text-align: center;
+      position: relative;
+    }
+    .step:not(:last-child)::after {
+      content: '→';
+      position: absolute; right: -20px; top: 22px;
+      color: var(--accent-blue);
+      font-size: 1.2rem;
+    }
+    .step-num {
+      font-family: 'Orbitron', monospace;
+      font-size: 2.5rem; font-weight: 900;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      display: block; margin-bottom: 12px;
+    }
+    .step h3 {
+      font-family: 'Orbitron', monospace;
+      font-size: 0.9rem; font-weight: 700;
+      color: var(--text-primary); margin-bottom: 8px;
+    }
+    .step p { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.6; }
+
+    /* ═══════════════════════════════════════
+       COIN STATS TABLE
+    ═══════════════════════════════════════ */
+    .coin-table-section { padding: 80px 64px; }
+    body.logged-in .coin-table-section { padding: 60px 48px; }
+
+    .coin-table {
+      width: 100%;
+      border-collapse: separate; border-spacing: 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .coin-table thead {
+      background: rgba(45,127,255,0.06);
+    }
+    .coin-table th {
+      padding: 14px 20px;
+      text-align: left;
+      font-size: 0.7rem; font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 1.5px; text-transform: uppercase;
+      font-family: 'JetBrains Mono', monospace;
+      border-bottom: 1px solid var(--border);
+    }
+    .coin-table td {
+      padding: 16px 20px;
+      font-size: 0.88rem;
+      border-bottom: 1px solid rgba(45,127,255,0.06);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .coin-table tr:last-child td { border-bottom: none; }
+    .coin-table tbody tr {
+      transition: background 0.2s;
+    }
+    .coin-table tbody tr:hover { background: rgba(45,127,255,0.04); }
+    .coin-name { display: flex; align-items: center; gap: 10px; }
+    .coin-dot {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700; color: #fff;
+    }
+    .up { color: var(--accent-green); }
+    .down { color: #ff5c7a; }
+
+    /* ═══════════════════════════════════════
+       CTA BANNER
+    ═══════════════════════════════════════ */
+    .cta-section {
+      padding: 80px 64px;
+      text-align: center;
+      position: relative; overflow: hidden;
+    }
+    body.logged-in .cta-section { padding: 60px 48px; }
+
+    .cta-section::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at center, rgba(45,127,255,0.12) 0%, transparent 70%);
+    }
+    .cta-section h2 {
+      font-family: 'Orbitron', monospace;
+      font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+      font-weight: 900; margin-bottom: 16px;
+      position: relative; z-index: 1;
+    }
+    .cta-section p {
+      color: var(--text-secondary); font-size: 1rem;
+      margin-bottom: 36px; position: relative; z-index: 1;
+    }
+    .cta-section .btn-hero { position: relative; z-index: 1; }
+
+    /* ═══════════════════════════════════════
+       FOOTER
+    ═══════════════════════════════════════ */
+    footer {
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      padding: 32px 64px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 16px;
+    }
+    body.logged-in footer { padding: 24px 48px; }
+    footer .logo { font-family: 'Orbitron', monospace; font-weight: 900; font-size: 1rem; color: var(--accent-cyan); letter-spacing: 2px; }
+    footer p { font-size: 0.78rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+    footer nav a { color: var(--text-muted); text-decoration: none; font-size: 0.8rem; margin-left: 20px; transition: color 0.2s; }
+    footer nav a:hover { color: var(--accent-cyan); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); }
+    ::-webkit-scrollbar-thumb { background: rgba(45,127,255,0.3); border-radius: 3px; }
+
+    /* ═══════════════════════════════════════
+       DISABLED STATE for nav items (logged-out)
+    ═══════════════════════════════════════ */
+    .disabled-link {
+      opacity: 0.35;
+      pointer-events: none;
+      cursor: not-allowed !important;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .hero { flex-direction: column; padding: 48px 24px; }
+      .hero-stats {
+        position: static; transform: none;
+        width: 100%; flex-direction: row; flex-wrap: wrap;
+        margin-top: 40px;
+      }
+      .stat-card { flex: 1; min-width: 140px; }
+      .section, .steps-section, .coin-table-section, .cta-section { padding: 60px 24px; }
+      footer { padding: 24px; }
+      .public-navbar { padding: 0 24px; }
+      .public-navbar nav { display: none; }
+      .sidebar { transform: translateX(-100%); }
+      body.logged-in .main-content { margin-left: 0; }
+    }
+  </style>
+</head>
+
+{% if user.is_authenticated %}
+<body class="logged-in">
+{% else %}
+<body>
+{% endif %}
+
+{% if not user.is_authenticated %}
+<header class="public-navbar">
+  <a href="/" class="logo">
+    <div class="logo-icon">T</div>
+    TRADEX
+  </a>
+  <nav>
+    <a href="#">Markets</a>
+    <a href="#">Exchange</a>
+    <a href="#">ICO</a>
+    <a href="#">About</a>
+  </nav>
+  <div class="nav-actions">
+    <a href="/login" class="btn-ghost">Login</a>
+    <a href="/register" class="btn-primary">Register</a>
+  </div>
+</header>
+{% endif %}
+
+{% if user.is_authenticated %}
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">T</div>
+    TRADEX
+  </div>
+  <nav>
+    <a href="/" class="active"><span class="icon">🏠</span> Home</a>
+    <a href="{% url 'admin_dashboard:dashboard' %}"><span class="icon">📊</span> Dashboard</a>
+    <a href="{% url 'admin_dashboard:purchases' %}"><span class="icon">🛒</span> Purchases</a>
+    <a href="{% url 'admin_dashboard:withdrawals' %}"><span class="icon">💸</span> Withdrawals</a>
+    <a href="{% url 'admin_dashboard:users' %}"><span class="icon">👥</span> Users</a>
+    <a href="{% url 'admin_dashboard:sponsor_users' %}"><span class="icon">🤝</span> Sponsors</a>
+    <a href="{% url 'admin_dashboard:coin_settings' %}"><span class="icon">₿</span> Coin Settings</a>
+  </nav>
+  <div class="sidebar-footer">
+    <a href="{% url 'admin_dashboard:logout' %}">🚪 Logout</a>
+  </div>
+</aside>
+{% endif %}
+
+<main class="main-content">
+
+  <div class="ticker-bar">
+    <div class="ticker-inner">
+      {% for i in "12" %}
+      <div class="ticker-item"><span class="ticker-symbol">BTC/USD</span><span class="ticker-price">$67,420.50</span><span class="ticker-up">+2.34%</span></div>
+      <div class="ticker-item"><span class="ticker-symbol">ETH/USD</span><span class="ticker-price">$3,812.00</span><span class="ticker-up">+1.87%</span></div>
+      <div class="ticker-item"><span class="ticker-symbol">TDX/USD</span><span class="ticker-price">$0.25000</span><span class="ticker-up">+5.20%</span></div>
+      <div class="ticker-item"><span class="ticker-symbol">BNB/USD</span><span class="ticker-price">$412.80</span><span class="ticker-down">-0.65%</span></div>
+      <div class="ticker-item"><span class="ticker-symbol">SOL/USD</span><span class="ticker-price">$172.40</span><span class="ticker-up">+3.10%</span></div>
+      <div class="ticker-item"><span class="ticker-symbol">ADA/USD</span><span class="ticker-price">$0.5920</span><span class="ticker-down">-1.20%</span></div>
+      <div class="ticker-item"><span class="ticker-symbol">DOT/USD</span><span class="ticker-price">$8.340</span><span class="ticker-up">+0.95%</span></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <section class="hero">
+    <div class="orb-2"></div>
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        ICO Live — Phase 1 Active
+      </div>
+      <h1>Trade Smarter.<br><span>Earn Faster.</span><br>Live Bolder.</h1>
+      <p>TRADEX is the next-generation cryptocurrency exchange platform built for serious traders. Buy, sell, and earn with zero compromise on speed, security, or yield.</p>
+      <div class="hero-cta">
+        {% if user.is_authenticated %}
+          <a href="{% url 'admin_dashboard:dashboard' %}" class="btn-hero">GO TO DASHBOARD</a>
+          <a href="{% url 'admin_dashboard:purchases' %}" class="btn-hero-outline">BUY COINS</a>
+        {% else %}
+          <a href="/register" class="btn-hero">START TRADING</a>
+          <a href="/login" class="btn-hero-outline">LOGIN</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="hero-stats">
+      <div class="stat-card">
+        <div class="stat-label">COIN RATE</div>
+        <div class="stat-value">$0.2500</div>
+        <div class="stat-change">↑ +5.20% today</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">TOTAL SUPPLY</div>
+        <div class="stat-value">32,000,000</div>
+        <div class="stat-change">TDX tokens</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">REMAINING</div>
+        <div class="stat-value">31,996,234</div>
+        <div class="stat-change down">↓ 3,766 sold</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">ACTIVE USERS</div>
+        <div class="stat-value">4 / 11</div>
+        <div class="stat-change">↑ Growing fast</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header">
+      <div class="section-tag">// why tradex</div>
+      <h2>Built for the <span>Future of Finance</span></h2>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3>INSTANT EXECUTION</h3>
+        <p>Trades execute in milliseconds. Our matching engine handles 100,000+ transactions per second with zero latency.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <h3>MILITARY SECURITY</h3>
+        <p>256-bit encryption, 2FA, and cold-wallet storage keep your assets safe. Audited by top-tier security firms.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📈</div>
+        <h3>ICO LAUNCHPAD</h3>
+        <p>Get early access to exclusive token offerings. Buy TDX at $0.25 and ride the wave to maximum returns.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💎</div>
+        <h3>REFERRAL REWARDS</h3>
+        <p>Earn passive income by inviting friends. Our sponsor system rewards every layer of your network generously.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🌐</div>
+        <h3>GLOBAL ACCESS</h3>
+        <p>Trade from anywhere in the world, 24/7. Multiple fiat on-ramps and instant crypto withdrawals.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>LIVE ANALYTICS</h3>
+        <p>Real-time charts, portfolio tracking, and market depth. Data-driven decisions, every single trade.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="steps-section">
+    <div class="section-header">
+      <div class="section-tag">// how it works</div>
+      <h2>Start Trading in <span>3 Simple Steps</span></h2>
+    </div>
+    <div class="steps-grid">
+      <div class="step">
+        <span class="step-num">01</span>
+        <h3>CREATE ACCOUNT</h3>
+        <p>Sign up in under 60 seconds. Verify your identity and unlock full trading access instantly.</p>
+      </div>
+      <div class="step">
+        <span class="step-num">02</span>
+        <h3>DEPOSIT FUNDS</h3>
+        <p>Fund your account with crypto or fiat. Instant deposits, zero hidden fees, full transparency.</p>
+      </div>
+      <div class="step">
+        <span class="step-num">03</span>
+        <h3>BUY & EARN</h3>
+        <p>Purchase TDX tokens at the current rate and watch your portfolio grow with the platform.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="coin-table-section">
+    <div class="section-header">
+      <div class="section-tag">// live markets</div>
+      <h2>Top <span>Cryptocurrencies</span></h2>
+    </div>
+    <table class="coin-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Asset</th>
+          <th>Price</th>
+          <th>24h Change</th>
+          <th>Market Cap</th>
+          <th>Volume</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="color:var(--text-muted)">1</td>
+          <td><div class="coin-name"><div class="coin-dot" style="background:linear-gradient(135deg,#f7931a,#ffb347)">₿</div><div><div style="color:var(--text-primary);font-weight:600">Bitcoin</div><div style="color:var(--text-muted);font-size:0.72rem">BTC</div></div></div></td>
+          <td>$67,420.50</td>
+          <td class="up">+2.34%</td>
+          <td>$1.32T</td>
+          <td>$28.4B</td>
+        </tr>
+        <tr>
+          <td style="color:var(--text-muted)">2</td>
+          <td><div class="coin-name"><div class="coin-dot" style="background:linear-gradient(135deg,#627eea,#9ba6f8)">Ξ</div><div><div style="color:var(--text-primary);font-weight:600">Ethereum</div><div style="color:var(--text-muted);font-size:0.72rem">ETH</div></div></div></td>
+          <td>$3,812.00</td>
+          <td class="up">+1.87%</td>
+          <td>$458B</td>
+          <td>$14.2B</td>
+        </tr>
+        <tr>
+          <td style="color:var(--text-muted)">3</td>
+          <td><div class="coin-name"><div class="coin-dot" style="background:linear-gradient(135deg,var(--accent-blue),var(--accent-cyan))">T</div><div><div style="color:var(--text-primary);font-weight:600">TRADEX</div><div style="color:var(--text-muted);font-size:0.72rem">TDX</div></div></div></td>
+          <td>$0.25000</td>
+          <td class="up">+5.20%</td>
+          <td>$8M</td>
+          <td>$942K</td>
+        </tr>
+        <tr>
+          <td style="color:var(--text-muted)">4</td>
+          <td><div class="coin-name"><div class="coin-dot" style="background:linear-gradient(135deg,#f0b90b,#f8d45a)">B</div><div><div style="color:var(--text-primary);font-weight:600">BNB</div><div style="color:var(--text-muted);font-size:0.72rem">BNB</div></div></div></td>
+          <td>$412.80</td>
+          <td class="down">-0.65%</td>
+          <td>$63.8B</td>
+          <td>$2.1B</td>
+        </tr>
+        <tr>
+          <td style="color:var(--text-muted)">5</td>
+          <td><div class="coin-name"><div class="coin-dot" style="background:linear-gradient(135deg,#9945ff,#14f195)">◎</div><div><div style="color:var(--text-primary);font-weight:600">Solana</div><div style="color:var(--text-muted);font-size:0.72rem">SOL</div></div></div></td>
+          <td>$172.40</td>
+          <td class="up">+3.10%</td>
+          <td>$80.2B</td>
+          <td>$4.7B</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="cta-section">
+    <h2>Ready to <span style="background:linear-gradient(135deg,var(--accent-blue),var(--accent-cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Join TRADEX?</span></h2>
+    <p>Don't miss Phase 1. TDX tokens are selling fast at $0.25 — lock in your position today.</p>
+    {% if user.is_authenticated %}
+      <a href="{% url 'admin_dashboard:purchases' %}" class="btn-hero">BUY TDX NOW</a>
+    {% else %}
+      <a href="/register" class="btn-hero">CREATE FREE ACCOUNT</a>
+    {% endif %}
+  </section>
+
+  <footer>
+    <div class="logo">TRADEX</div>
+    <p>© 2025 TRADEX. All rights reserved. Trade responsibly.</p>
+    <nav>
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+      <a href="#">Support</a>
+    </nav>
+  </footer>
+
+</main>
+</body>
+</html>

@@ -2,7 +2,8 @@ import jwt
 import datetime
 from django.conf import settings
 from django.contrib.auth import authenticate
-from rest_framework.decorators import api_view, permission_classes
+from django.shortcuts import render
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
@@ -25,7 +26,12 @@ def health_check(request):
     return Response({'status': 'ok'})
 
 
+def home(request):
+    return render(request, 'home.html')
+
+
 @api_view(['POST'])
+@authentication_classes([])
 @permission_classes([AllowAny])
 def register(request):
     serializer = RegisterSerializer(data=request.data)
@@ -41,22 +47,17 @@ def register(request):
 
 
 @api_view(['POST'])
+@authentication_classes([])
 @permission_classes([AllowAny])
 def login(request):
     serializer = LoginSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    username = serializer.validated_data['username']
+    email = serializer.validated_data['username']
     password = serializer.validated_data['password']
 
-    try:
-        user_obj = User.objects.get(email=username)
-        username = user_obj.username
-    except User.DoesNotExist:
-        pass
-
-    user = authenticate(username=username, password=password)
+    user = authenticate(request, email=email, password=password)
     if not user:
         return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 

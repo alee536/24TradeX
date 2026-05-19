@@ -1,9 +1,10 @@
-import { useGetDashboardSummary } from "@workspace/api-client-react";
+import { useGetDashboardSummary, useListPurchases } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCrypto, formatCurrency } from "@/lib/utils";
-import { Wallet, ArrowDownToLine, Clock, Users } from "lucide-react";
+import { Wallet, ArrowDownToLine, Clock, Users, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 
 // Simple animated counter component
 function AnimatedCounter({ value, isCurrency = false, symbol = "24X" }: { value: number, isCurrency?: boolean, symbol?: string }) {
@@ -34,7 +35,18 @@ function AnimatedCounter({ value, isCurrency = false, symbol = "24X" }: { value:
 }
 
 export default function Dashboard() {
-  const { data: summary, isLoading } = useGetDashboardSummary();
+  const { data: summary, isLoading, refetch } = useGetDashboardSummary();
+  const { data: purchases } = useListPurchases({ page: 1 }, { query: { refetchInterval: 8000 } });
+  const [, setLocation] = useLocation();
+  const rejectedPurchases = purchases?.results?.filter((p) => p.status === "rejected") || [];
+
+  // Poll dashboard summary every 8 seconds to show assigned coins without reload
+  useEffect(() => {
+    const id = setInterval(() => {
+      refetch?.();
+    }, 8000);
+    return () => clearInterval(id);
+  }, [refetch]);
 
   return (
     <div className="space-y-6">
@@ -43,17 +55,51 @@ export default function Dashboard() {
         <p className="text-muted-foreground mt-2">Welcome to your trading terminal.</p>
       </div>
 
+      {/* Rejection Alerts */}
+      {rejectedPurchases.length > 0 && (
+        <div className="space-y-2">
+          {rejectedPurchases.map((purchase) => (
+            <Card key={purchase.id} className="glass-panel border-l-4 border-l-red-500 bg-red-500/5">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-red-400 mt-0.5 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-red-300 mb-1">
+                      Purchase {purchase.transaction_id} was rejected
+                    </h3>
+                    <p className="text-sm text-red-200/80 mb-2">
+                      <strong>Reason:</strong> {purchase.rejection_reason}
+                    </p>
+                    {purchase.rejection_notes && (
+                      <p className="text-sm text-red-200/70 mb-2">
+                        <strong>Admin Notes:</strong> {(purchase as any).rejection_notes}
+                      </p>
+                    )}
+                    <button
+                      onClick={() => setLocation("/purchase")}
+                      className="text-sm font-semibold text-red-300 hover:text-red-200 transition-colors"
+                    >
+                      View Details & Upload Documents →
+                    </button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="glass-panel border-l-4 border-l-primary">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Purchased
+              Total Coins
             </CardTitle>
             <Wallet className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <Skeleton className="h-8 w-[120px]" />
+              <Skeleton className="h-8 w-30" />
             ) : (
               <div className="text-2xl font-bold text-white">
                 <AnimatedCounter value={summary?.total_purchased || 0} />
@@ -65,16 +111,24 @@ export default function Dashboard() {
         <Card className="glass-panel border-l-4 border-l-green-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Available Withdrawal
+              Available Coins
             </CardTitle>
             <ArrowDownToLine className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <Skeleton className="h-8 w-[120px]" />
+              <Skeleton className="h-8 w-30" />
             ) : (
-              <div className="text-2xl font-bold text-white">
-                <AnimatedCounter value={summary?.available_withdrawal || 0} />
+              <div className="space-y-1">
+                <div className="text-2xl font-bold text-white">
+                  <AnimatedCounter value={(summary as any)?.available_withdrawal || 0} />
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  USDT equivalent: {formatCurrency((summary as any)?.available_withdrawal_usdt || 0)}
+                </div>
+                <div className="text-[11px] text-muted-foreground">
+                  Latest rate: 1 Coin = {formatCurrency((summary as any)?.current_coin_rate || 0)}
+                </div>
               </div>
             )}
           </CardContent>
@@ -83,16 +137,19 @@ export default function Dashboard() {
         <Card className="glass-panel border-l-4 border-l-blue-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Pending Withdrawal
+              Locked Coins
             </CardTitle>
             <Clock className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <Skeleton className="h-8 w-[120px]" />
+              <Skeleton className="h-8 w-30" />
             ) : (
-              <div className="text-2xl font-bold text-white">
-                <AnimatedCounter value={summary?.pending_withdrawal || 0} />
+              <div className="space-y-1">
+                <div className="text-2xl font-bold text-white">
+                  <AnimatedCounter value={summary?.pending_withdrawal || 0} />
+                </div>
+                <div className="text-xs text-muted-foreground">Assigned but still locked by vesting</div>
               </div>
             )}
           </CardContent>
@@ -107,7 +164,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <Skeleton className="h-8 w-[120px]" />
+              <Skeleton className="h-8 w-30" />
             ) : (
               <div className="text-2xl font-bold text-white">
                 <AnimatedCounter value={summary?.sponsor_earnings || 0} isCurrency />

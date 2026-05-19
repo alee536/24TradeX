@@ -20,17 +20,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const storedToken = localStorage.getItem("24tradex_token");
     const storedUser = localStorage.getItem("24tradex_user");
-    
-    if (storedToken && storedUser) {
-      try {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        localStorage.removeItem("24tradex_token");
-        localStorage.removeItem("24tradex_user");
+
+    const bootstrapAuth = async () => {
+      if (storedToken && storedUser) {
+        try {
+          setToken(storedToken);
+          const cachedUser = JSON.parse(storedUser);
+          setUser(cachedUser);
+
+          const response = await fetch("/api/profile", {
+            headers: {
+              Authorization: `Bearer ${storedToken}`,
+            },
+          });
+
+          if (response.ok) {
+            const profile = await response.json();
+            setUser(profile);
+            localStorage.setItem("24tradex_user", JSON.stringify(profile));
+          }
+        } catch (e) {
+          localStorage.removeItem("24tradex_token");
+          localStorage.removeItem("24tradex_user");
+          setToken(null);
+          setUser(null);
+        }
       }
-    }
-    setIsLoading(false);
+
+      setIsLoading(false);
+    };
+
+    void bootstrapAuth();
   }, []);
 
   const login = (data: AuthResponse) => {
@@ -45,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     localStorage.removeItem("24tradex_token");
     localStorage.removeItem("24tradex_user");
+    window.location.href = "/";
   };
 
   return (

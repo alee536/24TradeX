@@ -9,6 +9,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getGetUnlockedAmountQueryKey, getListWithdrawalsQueryKey } from "@workspace/api-client-react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -16,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, ArrowDownToLine, CheckCircle2, Clock, XCircle, Lock, Unlock } from "lucide-react";
-import { formatCrypto } from "@/lib/utils";
+import { formatCrypto, formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -33,6 +34,20 @@ export default function Withdraw() {
   const { data: unlockData, isLoading: loadingUnlock } = useGetUnlockedAmount();
   const { data: withdrawals, isLoading: loadingWithdrawals } = useListWithdrawals({ page: 1 });
   const createWithdrawal = useCreateWithdrawal();
+  const { data: liveSettings } = useQuery({
+    queryKey: ["public-coin-settings"],
+    queryFn: async () => {
+      const response = await fetch("/api/settings/public");
+      if (!response.ok) {
+        throw new Error("Failed to load coin settings");
+      }
+      return response.json() as Promise<{
+        coin_rate: string | number;
+        currency_symbol: string;
+      }>;
+    },
+    refetchInterval: 15000,
+  });
 
   const form = useForm<WithdrawFormValues>({
     resolver: zodResolver(withdrawSchema),
@@ -43,6 +58,10 @@ export default function Withdraw() {
   });
 
   const availableAmount = unlockData?.available || 0;
+  const currentCoinRate = Number(liveSettings?.coin_rate || 0);
+  const availableUsdEquivalent = availableAmount * currentCoinRate;
+  const totalAssignedCoins = unlockData?.breakdown?.reduce((sum, item) => sum + Number(item.amount || 0), 0) || 0;
+  const lockedAmount = Math.max(0, totalAssignedCoins - Number(unlockData?.total_unlocked || 0));
 
   const onSubmit = (data: WithdrawFormValues) => {
     if (data.amount > availableAmount) {
@@ -88,7 +107,7 @@ export default function Withdraw() {
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="glass-panel">
           <CardHeader>
-            <CardTitle>Unlock Status</CardTitle>
+            <CardTitle>Coin Unlock Status</CardTitle>
             <CardDescription>Your token vesting progress</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -103,19 +122,34 @@ export default function Withdraw() {
                </div>
                <div className="p-4 bg-black/30 rounded-lg border border-white/5">
                   <div className="text-sm text-muted-foreground flex items-center gap-1 mb-1">
-                     <Lock className="w-3 h-3" /> Total Unlocked
+                     <Lock className="w-3 h-3" /> Locked
                   </div>
                   <div className="text-xl font-bold text-white">
-                     {loadingUnlock ? <Loader2 className="h-4 w-4 animate-spin" /> : formatCrypto(unlockData?.total_unlocked || 0)}
+                     {loadingUnlock ? <Loader2 className="h-4 w-4 animate-spin" /> : formatCrypto(lockedAmount)}
                   </div>
                </div>
             </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-black/30 rounded-lg border border-white/5">
+                  <div className="text-sm text-muted-foreground mb-1">Latest Coin Rate</div>
+                  <div className="text-xl font-bold text-cyan-300">
+                    {liveSettings ? `1 Coin = ${formatCrypto(currentCoinRate, liveSettings.currency_symbol || "USD")}` : <Loader2 className="h-4 w-4 animate-spin" />}
+                  </div>
+                </div>
+                <div className="p-4 bg-black/30 rounded-lg border border-white/5">
+                  <div className="text-sm text-muted-foreground mb-1">Available USDT Value</div>
+                  <div className="text-xl font-bold text-green-400">
+                    {loadingUnlock ? <Loader2 className="h-4 w-4 animate-spin" /> : formatCurrency(availableUsdEquivalent)}
+                  </div>
+                </div>
+              </div>
 
             <div className="space-y-4 mt-6">
                <h3 className="text-sm font-medium">Stage Breakdown</h3>
                {loadingUnlock ? (
                   <div className="space-y-2"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div>
-               ) : unlockData?.breakdown?.length ? (
+              ) : unlockData?.breakdown?.length ? (
                   unlockData.breakdown.map((item, idx) => (
                      <div key={idx} className="bg-black/20 p-3 rounded border border-white/5 space-y-2">
                         <div className="flex justify-between text-sm">
@@ -126,11 +160,16 @@ export default function Withdraw() {
                            <div className="text-lg font-bold">{formatCrypto(item.unlocked)}</div>
                            <div className="text-xs text-muted-foreground">of {formatCrypto(item.amount)}</div>
                         </div>
+                      <div className="text-xs text-muted-foreground">
+                        USDT equivalent: {formatCurrency(Number(item.unlocked) * currentCoinRate)}
+                      </div>
                         <Progress value={(item.unlocked / item.amount) * 100} className="h-1" />
                      </div>
                   ))
                ) : (
-                  <div className="text-sm text-muted-foreground text-center p-4">No active purchases found.</div>
+                <div className="text-sm text-muted-foreground text-center p-4">
+                  No unlocked coins yet. Your approved purchases are still in vesting stages.
+                </div>
                )}
             </div>
           </CardContent>
@@ -139,7 +178,7 @@ export default function Withdraw() {
         <Card className="glass-panel">
           <CardHeader>
             <CardTitle>Withdrawal Request</CardTitle>
-            <CardDescription>Withdraw unlocked tokens to your wallet</CardDescription>
+            <CardDescription>Withdraw unlocked coins to your wallet</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -149,7 +188,7 @@ export default function Withdraw() {
                   name="amount"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Amount to Withdraw</FormLabel>
+                      <FormLabel>Coins to Withdraw</FormLabel>
                       <FormControl>
                         <div className="relative">
                            <Input type="number" step="any" placeholder="0.00" {...field} className="bg-black/20" />
@@ -194,6 +233,11 @@ export default function Withdraw() {
                     <><ArrowDownToLine className="mr-2 h-4 w-4" /> Request Withdrawal</>
                   )}
                 </Button>
+                {availableAmount <= 0 && lockedAmount > 0 && (
+                  <p className="mt-2 text-xs text-amber-300/90">
+                    You have {formatCrypto(lockedAmount)} locked coins. Withdrawals will be enabled automatically after vesting unlocks.
+                  </p>
+                )}
               </form>
             </Form>
           </CardContent>

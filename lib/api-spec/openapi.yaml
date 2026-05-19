@@ -743,7 +743,7 @@ components:
           type: string
         status:
           type: string
-          enum: [pending, approved, rejected]
+          enum: [pending, approved, completed, rejected]
         manual_tx_hash:
           type: ["string", "null"]
         rejection_reason:
@@ -878,6 +878,27 @@ components:
         created_at:
           type: string
           format: date-time
+        requested_amount:
+          type: ["number", "null"]
+        paid_amount:
+          type: ["number", "null"]
+        remaining_amount:
+          type: ["number", "null"]
+        paid_percent:
+          type: ["number", "null"]
+        remaining_percent:
+          type: ["number", "null"]
+        payment_stage:
+          type: ["integer", "null"]
+        next_payout_stage:
+          type: ["integer", "null"]
+        next_payout_at:
+          type: ["string", "null"]
+          format: date-time
+        stage_amounts:
+          type: ["array", "null"]
+          items:
+            type: number
 
     TransactionList:
       type: object

@@ -6,14 +6,17 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatCurrency(amount: number) {
+  const numericAmount = typeof amount === "number" ? amount : Number(amount);
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-  }).format(amount)
+  }).format(Number.isFinite(numericAmount) ? numericAmount : 0)
 }
 
 export function formatCrypto(amount: number, symbol: string = '24X') {
-  return `${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })} ${symbol}`
+  const numericAmount = typeof amount === "number" ? amount : Number(amount);
+  const safeAmount = Number.isFinite(numericAmount) ? numericAmount : 0;
+  return `${safeAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })} ${symbol}`
 }
 
 export function generateTxId() {

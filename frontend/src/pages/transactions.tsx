@@ -3,6 +3,7 @@ import { useListTransactions } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { formatCrypto } from "@/lib/utils";
@@ -39,6 +40,53 @@ export default function Transactions() {
     return txType.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 
+  const getWithdrawalProgress = (tx: any) => {
+    const requestedAmount = Number(tx?.requested_amount ?? tx?.amount ?? 0);
+    const paidAmount = Number(tx?.paid_amount ?? 0);
+    const remainingAmount = Number(tx?.remaining_amount ?? Math.max(0, requestedAmount - paidAmount));
+    const paidPercent = Number(tx?.paid_percent ?? (requestedAmount > 0 ? (paidAmount / requestedAmount) * 100 : 0));
+    const remainingPercent = Number(tx?.remaining_percent ?? Math.max(0, 100 - paidPercent));
+    return {
+      requestedAmount,
+      paidAmount,
+      remainingAmount,
+      paidPercent: Number.isFinite(paidPercent) ? paidPercent : 0,
+      remainingPercent: Number.isFinite(remainingPercent) ? remainingPercent : 0,
+    };
+  };
+
+  const getAmountLabel = (tx: any) => {
+    if (tx.type !== 'withdrawal') {
+      return { sign: '+', amount: Number(tx.amount ?? 0), className: 'text-primary' };
+    }
+
+    const progress = getWithdrawalProgress(tx);
+    const shownAmount = tx.status === 'pending' || tx.status === 'rejected'
+      ? progress.requestedAmount
+      : progress.paidAmount;
+
+    return { sign: '-', amount: shownAmount, className: 'text-green-400' };
+  };
+
+  const renderWithdrawalProgress = (tx: any) => {
+    if (tx.type !== 'withdrawal') return null;
+    const progress = getWithdrawalProgress(tx);
+
+    return (
+      <div className="space-y-2 min-w-55">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>Completed {progress.paidPercent.toFixed(2)}%</span>
+          <span>Remaining {progress.remainingPercent.toFixed(2)}%</span>
+        </div>
+        <Progress value={Math.max(0, Math.min(100, progress.paidPercent))} className="h-2 bg-white/10" />
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>{formatCrypto(progress.paidAmount)} paid</span>
+          <span>{formatCrypto(progress.remainingAmount)} left</span>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -64,13 +112,14 @@ export default function Transactions() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border border-white/10 overflow-hidden bg-black/20">
+          <div className="rounded-md border border-white/10 overflow-hidden bg-black/20 hidden md:block">
             <Table>
               <TableHeader className="bg-white/5">
                 <TableRow className="border-white/10 hover:bg-transparent">
                   <TableHead>Type</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Description</TableHead>
+                  <TableHead>Progress</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
                   <TableHead className="text-right">Status</TableHead>
                 </TableRow>
@@ -78,12 +127,14 @@ export default function Transactions() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
+                    <TableCell colSpan={6} className="h-24 text-center">
                       <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
                     </TableCell>
                   </TableRow>
                 ) : data?.results?.length ? (
-                  data.results.map((tx) => (
+                  data.results.map((tx: any) => {
+                    const amountLabel = getAmountLabel(tx);
+                    return (
                     <TableRow key={tx.id} className="border-white/5 hover:bg-white/5">
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -97,25 +148,66 @@ export default function Transactions() {
                       <TableCell className="text-muted-foreground text-sm">
                         {tx.description || "-"}
                       </TableCell>
+                      <TableCell>
+                        {renderWithdrawalProgress(tx) || <span className="text-xs text-muted-foreground">-</span>}
+                      </TableCell>
                       <TableCell className="text-right font-mono font-medium">
-                        <span className={tx.type === 'withdrawal' ? 'text-green-400' : 'text-primary'}>
-                           {tx.type === 'withdrawal' ? '-' : '+'}{formatCrypto(tx.amount)}
+                        <span className={amountLabel.className}>
+                           {amountLabel.sign}{formatCrypto(amountLabel.amount)}
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
                         {getStatusBadge(tx.status)}
                       </TableCell>
                     </TableRow>
-                  ))
+                    );
+                  })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                       No transactions found.
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
+          </div>
+
+          <div className="md:hidden space-y-3">
+            {isLoading ? (
+              <div className="h-24 flex items-center justify-center rounded-md border border-white/10 bg-black/20">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : data?.results?.length ? (
+              data.results.map((tx: any) => {
+                const amountLabel = getAmountLabel(tx);
+                return (
+                  <div key={tx.id} className="rounded-md border border-white/10 bg-black/20 p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          {getTypeIcon(tx.type)}
+                          <span className="font-medium">{formatType(tx.type)}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{new Date(tx.created_at).toLocaleString()}</p>
+                      </div>
+                      {getStatusBadge(tx.status)}
+                    </div>
+                    <p className="text-sm text-muted-foreground">{tx.description || '-'}</p>
+                    {renderWithdrawalProgress(tx)}
+                    <div className="text-right font-mono font-medium">
+                      <span className={amountLabel.className}>
+                        {amountLabel.sign}{formatCrypto(amountLabel.amount)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="h-24 flex items-center justify-center rounded-md border border-white/10 bg-black/20 text-muted-foreground">
+                No transactions found.
+              </div>
+            )}
           </div>
 
           {data && data.count > 0 && (

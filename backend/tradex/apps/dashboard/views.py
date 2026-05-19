@@ -4,25 +4,29 @@ from rest_framework.response import Response
 from apps.purchases.models import Purchase
 from apps.withdrawals.models import Withdrawal
 from apps.notifications.models import Notification
+from apps.settings_app.models import SystemSettings
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def dashboard_summary(request):
     user = request.user
+    from apps.withdrawals.views import sync_user_withdrawals
 
-    approved_purchases = Purchase.objects.filter(user=user, status='approved')
-    total_purchased = sum(p.amount for p in approved_purchases)
+    sync_user_withdrawals(user)
 
-    total_unlocked = sum(p.unlocked_amount for p in approved_purchases)
-    total_withdrawn_approved = sum(
-        w.amount for w in Withdrawal.objects.filter(user=user, status='approved')
-    )
-    pending_withdrawals = sum(
-        w.amount for w in Withdrawal.objects.filter(user=user, status='pending')
-    )
+    # Only consider purchases for which coins have actually been assigned
+    approved_assigned_purchases = Purchase.objects.filter(user=user, status='approved', is_coins_assigned=True)
+    total_purchased = sum(float(p.approved_coin_amount if p.approved_coin_amount is not None else p.calculated_coins) for p in approved_assigned_purchases)
 
-    available_withdrawal = max(0, float(total_unlocked) - float(total_withdrawn_approved) - float(pending_withdrawals))
+    # Only unlocked amounts from assigned purchases are available for withdrawal
+    total_unlocked = sum(p.unlocked_amount for p in approved_assigned_purchases)
+    total_withdrawn = sum(w.amount for w in Withdrawal.objects.filter(user=user, status__in=['pending', 'approved', 'completed']))
+    # Coins that are assigned but not yet unlocked (shown on dashboard as pending/locked coins)
+    locked_coins = max(0, float(total_purchased) - float(total_unlocked))
+
+    available_withdrawal = max(0, float(total_unlocked) - float(total_withdrawn))
+    settings_obj = SystemSettings.get_settings()
 
     unread_notifications = Notification.objects.filter(user=user, is_read=False).count()
 
@@ -30,7 +34,9 @@ def dashboard_summary(request):
         'total_purchased': float(total_purchased),
         'total_sold': 0,
         'available_withdrawal': available_withdrawal,
-        'pending_withdrawal': float(pending_withdrawals),
+        'available_withdrawal_usdt': float(available_withdrawal * float(settings_obj.coin_rate)),
+        'current_coin_rate': float(settings_obj.coin_rate),
+        'pending_withdrawal': float(locked_coins),
         'sponsor_earnings': float(user.sponsor_earnings),
         'unread_notifications': unread_notifications,
     })

@@ -4,10 +4,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { 
   useListPurchases, 
-  useCreatePurchase, 
-  useAdminGetSettings 
+  useCreatePurchase
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { getListPurchasesQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Copy, Wallet, CheckCircle2, Clock, XCircle } from "lucide-react";
-import { formatCrypto, generateTxId, copyToClipboard } from "@/lib/utils";
+import { formatCrypto, copyToClipboard } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
 const purchaseSchema = z.object({
@@ -29,10 +29,35 @@ type PurchaseFormValues = z.infer<typeof purchaseSchema>;
 export default function Purchase() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { data: settings } = useAdminGetSettings();
-  const { data: purchases, isLoading: loadingPurchases } = useListPurchases({ page: 1 });
+  const { data: liveSettings } = useQuery({
+    queryKey: ["public-coin-settings"],
+    queryFn: async () => {
+      const response = await fetch("/api/settings/public");
+      if (!response.ok) {
+        throw new Error("Failed to load coin settings");
+      }
+      return response.json() as Promise<{
+        coin_rate: string | number;
+        currency_symbol: string;
+        last_updated_at: string;
+        min_purchase: string | number;
+        max_purchase: string | number;
+        usdt_wallet_address: string;
+      }>;
+    },
+    refetchInterval: 15000,
+  });
+  const { data: purchases, isLoading: loadingPurchases } = useListPurchases(
+    { page: 1 },
+    { query: { refetchInterval: 8000 } },
+  );
   const createPurchase = useCreatePurchase();
   const [copied, setCopied] = useState(false);
+  const [uploadModal, setUploadModal] = useState<{ isOpen: boolean; purchaseId?: number; transactionId?: string }>({
+    isOpen: false,
+  });
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
   const form = useForm<PurchaseFormValues>({
     resolver: zodResolver(purchaseSchema),
@@ -42,6 +67,10 @@ export default function Purchase() {
       wallet_address: "",
     },
   });
+
+  const watchedAmount = Number(form.watch("amount") || 0);
+  const coinRate = Number(liveSettings?.coin_rate || 0);
+  const estimatedCoins = coinRate > 0 && watchedAmount > 0 ? watchedAmount / coinRate : 0;
 
   const onSubmit = (data: PurchaseFormValues) => {
     createPurchase.mutate({ data }, {
@@ -64,8 +93,8 @@ export default function Purchase() {
   };
 
   const handleCopy = async () => {
-    if (settings?.usdt_wallet_address) {
-      await copyToClipboard(settings.usdt_wallet_address);
+    if (liveSettings?.usdt_wallet_address) {
+      await copyToClipboard(liveSettings.usdt_wallet_address);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
       toast({ title: "Address copied to clipboard" });
@@ -77,6 +106,67 @@ export default function Purchase() {
       case 'approved': return <Badge className="bg-green-500/20 text-green-500 border-green-500/50"><CheckCircle2 className="w-3 h-3 mr-1"/> Approved</Badge>;
       case 'rejected': return <Badge variant="destructive" className="bg-red-500/20 text-red-500 border-red-500/50"><XCircle className="w-3 h-3 mr-1"/> Rejected</Badge>;
       default: return <Badge variant="secondary" className="bg-blue-500/20 text-blue-500 border-blue-500/50"><Clock className="w-3 h-3 mr-1"/> Pending</Badge>;
+    }
+  };
+
+  const openDocumentUploadModal = (purchaseId: number, transactionId: string) => {
+    setUploadModal({ isOpen: true, purchaseId, transactionId });
+    setUploadedFiles([]);
+  };
+
+  const handleFileSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setUploadedFiles(Array.from(e.target.files));
+    }
+  };
+
+  const handleDocumentUpload = async () => {
+    if (!uploadModal.purchaseId || uploadedFiles.length === 0) {
+      toast({
+        title: "No files selected",
+        description: "Please select at least one file to upload.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploadingFile(true);
+    try {
+      for (const file of uploadedFiles) {
+        const formData = new FormData();
+        formData.append("document", file);
+
+        const response = await fetch(
+          `/api/purchases/${uploadModal.purchaseId}/upload-rejection-document`,
+          {
+            method: "POST",
+            body: formData,
+            credentials: "same-origin",
+          }
+        );
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Failed to upload document");
+        }
+      }
+
+      toast({
+        title: "Documents uploaded successfully",
+        description: "Your supporting documents have been submitted. Admins will review them shortly.",
+      });
+
+      setUploadModal({ isOpen: false });
+      setUploadedFiles([]);
+      queryClient.invalidateQueries({ queryKey: getListPurchasesQueryKey() });
+    } catch (error) {
+      toast({
+        title: "Upload failed",
+        description: error instanceof Error ? error.message : "Failed to upload documents",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingFile(false);
     }
   };
 
@@ -104,7 +194,7 @@ export default function Purchase() {
                  <p className="text-sm text-muted-foreground mb-1">Official USDT (BEP20) Address</p>
                  <div className="flex items-center gap-2 bg-black/50 p-2 rounded border border-white/10">
                    <code className="text-xs flex-1 truncate text-primary">
-                     {settings?.usdt_wallet_address || "Loading address..."}
+                     {liveSettings?.usdt_wallet_address || "Loading address..."}
                    </code>
                    <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-white" onClick={handleCopy}>
                      {copied ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
@@ -115,7 +205,7 @@ export default function Purchase() {
             
             <div className="text-sm text-muted-foreground space-y-2">
               <p>1. Send only USDT on the Binance Smart Chain (BEP20).</p>
-              <p>2. Minimum purchase: <strong className="text-white">{settings?.min_purchase || 0} USDT</strong></p>
+              <p>2. Minimum purchase: <strong className="text-white">{liveSettings?.min_purchase || 0} USDT</strong></p>
               <p>3. After sending, copy the Transaction Hash (TXID) and fill the form.</p>
             </div>
           </CardContent>
@@ -145,6 +235,35 @@ export default function Purchase() {
                     </FormItem>
                   )}
                 />
+
+                <div className="mt-2 space-y-2">
+                  <div className="text-sm font-medium leading-none text-foreground">Expected Coins</div>
+                  <Input readOnly value={coinRate > 0 && watchedAmount > 0 ? (watchedAmount / coinRate).toLocaleString(undefined, { maximumFractionDigits: 8 }) : '0'} className="bg-black/10 font-mono" />
+                  <p className="text-xs text-muted-foreground">
+                    Coins are auto-calculated as Amount / Coin Price and will be credited after admin approval.
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-cyan-500/20 bg-linear-to-br from-cyan-500/10 via-slate-950 to-slate-900 p-4 shadow-[0_0_40px_rgba(34,211,238,0.12)]">
+                  <p className="text-xs uppercase tracking-[0.22em] text-cyan-300/80">Live Coin Preview</p>
+                  <div className="mt-2 flex items-end justify-between gap-4">
+                    <div>
+                      <div className="text-3xl font-semibold text-white">
+                        {estimatedCoins > 0 ? estimatedCoins.toLocaleString(undefined, { maximumFractionDigits: 6 }) : "0"}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Coins you will receive</div>
+                    </div>
+                    <div className="text-right text-xs text-muted-foreground">
+                      <div>Current rate</div>
+                      <div className="font-mono text-cyan-300">
+                        1 Coin = {liveSettings ? `${formatCrypto(Number(liveSettings.coin_rate || 0), liveSettings.currency_symbol || "USD")}` : "Loading..."}
+                      </div>
+                      <div className="mt-1">
+                        Updated {liveSettings?.last_updated_at ? new Date(liveSettings.last_updated_at).toLocaleString() : "just now"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 
                 <FormField
                   control={form.control}
@@ -211,12 +330,30 @@ export default function Purchase() {
                           <span className="text-xs font-mono text-muted-foreground">{purchase.transaction_id}</span>
                           {getStatusBadge(purchase.status)}
                        </div>
-                       <div className="text-2xl font-bold text-white">
+                        <div className="text-2xl font-bold text-white">
                           {formatCrypto(purchase.amount)}
-                       </div>
+                        </div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                            Coins: {(purchase as any).assigned_coins ? formatCrypto(Number((purchase as any).assigned_coins), '24X') : 'Pending'}
+                        </div>
                        <div className="text-xs text-muted-foreground mt-2">
                           Date: {new Date(purchase.created_at).toLocaleDateString()}
                        </div>
+                      {purchase.status === "rejected" && purchase.rejection_reason && (
+                       <div className="rounded-md border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-300 space-y-2">
+                        <div><strong>Reason:</strong> {purchase.rejection_reason}</div>
+                        {purchase.rejection_notes && (
+                          <div><strong>Notes:</strong> {purchase.rejection_notes}</div>
+                        )}
+                        <button 
+                          type="button"
+                          className="text-white bg-red-500/30 hover:bg-red-500/50 px-2 py-1 rounded text-xs font-semibold transition-colors mt-2 w-full"
+                          onClick={() => openDocumentUploadModal(purchase.id, purchase.transaction_id)}
+                        >
+                          Upload Supporting Documents
+                        </button>
+                       </div>
+                      )}
                     </CardContent>
                  </Card>
               ))
@@ -227,6 +364,88 @@ export default function Purchase() {
            )}
         </div>
       </div>
+
+      {/* Document Upload Modal */}
+      {uploadModal.isOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="glass-panel w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Upload Supporting Documents</CardTitle>
+              <CardDescription>
+                Purchase {uploadModal.transactionId}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Upload documents (PDF, images, etc.) to support your appeal. Max 10MB per file.
+                </p>
+                
+                <div className="border-2 border-dashed border-white/20 rounded-lg p-6 text-center cursor-pointer hover:border-white/40 transition-colors"
+                     onClick={() => document.getElementById('fileInput')?.click()}>
+                  <input
+                    id="fileInput"
+                    type="file"
+                    multiple
+                    accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx"
+                    onChange={handleFileSelection}
+                    className="hidden"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    {uploadedFiles.length === 0 
+                      ? "Click to select files or drag and drop" 
+                      : `${uploadedFiles.length} file(s) selected`}
+                  </p>
+                </div>
+
+                {uploadedFiles.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {uploadedFiles.map((file, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-2 bg-white/5 rounded">
+                        <span className="text-sm">{file.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => setUploadedFiles(uploadedFiles.filter((_, i) => i !== idx))}
+                          className="text-xs text-red-400 hover:text-red-300"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded p-3 text-xs text-blue-300">
+                <strong>Note:</strong> Admins will review your documents and may revert the rejection if they are satisfied with your explanation.
+              </div>
+            </CardContent>
+            <div className="flex gap-2 p-6 border-t border-white/10">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setUploadModal({ isOpen: false });
+                  setUploadedFiles([]);
+                }}
+                disabled={uploadingFile}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleDocumentUpload}
+                disabled={uploadingFile || uploadedFiles.length === 0}
+                className="flex-1"
+              >
+                {uploadingFile ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Uploading...</>
+                ) : (
+                  "Upload Documents"
+                )}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

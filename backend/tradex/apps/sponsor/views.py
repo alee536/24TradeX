@@ -18,7 +18,7 @@ def sponsor_stats(request):
         user__in=sponsored_users, status='approved'
     )
     sponsored_withdrawals = Withdrawal.objects.filter(
-        user__in=sponsored_users, status='approved'
+        user__in=sponsored_users, status__in=['pending', 'approved', 'completed']
     )
 
     total_sponsored_purchase_amount = sum(p.amount for p in sponsored_purchases)
@@ -54,7 +54,7 @@ def sponsored_users(request):
     results = []
     for su in qs:
         purchases = Purchase.objects.filter(user=su, status='approved')
-        withdrawals = Withdrawal.objects.filter(user=su, status='approved')
+        withdrawals = Withdrawal.objects.filter(user=su, status__in=['pending', 'approved', 'completed'])
         purchase_amount = sum(p.amount for p in purchases)
         withdrawal_amount = sum(w.amount for w in withdrawals)
 

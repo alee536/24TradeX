@@ -11,10 +11,9 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Eye, EyeOff, TrendingUp, Shield, Coins, Users } from "lucide-react";
 import { CryptoBackground } from "@/components/ui/crypto-background";
-import { Logo } from "@/components/ui/logo";
 
 const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
+  email: z.string().email("Email is required"),
   password: z.string().min(1, "Password is required"),
 });
 
@@ -42,14 +41,17 @@ export default function Login() {
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { username: "", password: "" },
+    defaultValues: { email: "", password: "" },
   });
 
   const onSubmit = (data: LoginFormValues) => {
-    loginMutation.mutate({ data }, {
+    loginMutation.mutate({ data: { username: data.email, password: data.password } }, {
       onSuccess: (res) => {
+        console.log('login success response:', res);
         login(res);
-        setLocation("/");
+        console.log('after login, token in localStorage:', localStorage.getItem('24tradex_token'));
+        // give context a tick to update before navigating
+        setTimeout(() => setLocation("/user/dashboard"), 50);
       },
       onError: (err: any) => {
         toast({
@@ -73,11 +75,6 @@ export default function Login() {
       >
         <CryptoBackground intensity={1} />
 
-        {/* Logo */}
-        <div className="relative z-10">
-          <Logo variant="desktop" />
-        </div>
-
         {/* Center content */}
         <div className="relative z-10 flex-1 flex flex-col justify-center py-12">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-8 w-fit"
@@ -86,7 +83,7 @@ export default function Login() {
             Platform Live — Trade Now
           </div>
 
-          <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight mb-4">
+          <h1 className="text-lg font-bold text-white leading-tight mb-4">
             Grow Your Wealth with{" "}
             <span style={{ color: "#60a5fa" }}>Smart Crypto</span>{" "}
             Trading
@@ -124,11 +121,6 @@ export default function Login() {
       <div className="flex-1 flex items-center justify-center p-6 lg:p-12 relative">
         <CryptoBackground intensity={0.4} />
 
-        {/* Mobile logo */}
-        <div className="absolute top-6 left-6 lg:hidden z-10">
-          <Logo variant="mobile" />
-        </div>
-
         <div className="w-full max-w-md relative z-10">
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-white mb-1">Welcome back</h2>
@@ -137,17 +129,17 @@ export default function Login() {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-              <FormField control={form.control} name="username"
+              <FormField control={form.control} name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-400 text-xs uppercase tracking-wider">Username</FormLabel>
+                    <FormLabel className="text-gray-400 text-xs uppercase tracking-wider">Email Address</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Enter your username"
+                        placeholder="Enter your email"
                         {...field}
                         className="h-12 text-white placeholder:text-gray-600 border-0 focus-visible:ring-1 focus-visible:ring-blue-500/50"
                         style={{ background: "rgba(255,255,255,0.05)", borderRadius: "8px" }}
-                        autoComplete="username"
+                        autoComplete="email"
                       />
                     </FormControl>
                     <FormMessage />

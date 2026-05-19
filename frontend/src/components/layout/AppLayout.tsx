@@ -2,21 +2,20 @@ import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import {
+  Settings,
+  LogOut,
+  ShieldAlert,
+  Home,
   LayoutDashboard,
   ShoppingCart,
   ArrowDownToLine,
   History,
   Users,
   UserCircle,
-  Settings,
-  LogOut,
-  ShieldAlert,
-  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CryptoBackground } from "@/components/ui/crypto-background";
-import { Logo } from "@/components/ui/logo";
 import { SocialLinks } from "@/components/ui/social-links";
+import { Logo } from "../ui/logo";
 
 interface SidebarItem {
   icon: React.ElementType;
@@ -26,7 +25,8 @@ interface SidebarItem {
 }
 
 const items: SidebarItem[] = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/" },
+  { icon: Home, label: "Home", href: "/" },
+  { icon: LayoutDashboard, label: "Dashboard", href: "/user/dashboard" },
   { icon: ShoppingCart, label: "Purchase", href: "/purchase" },
   { icon: ArrowDownToLine, label: "Withdraw", href: "/withdraw" },
   { icon: History, label: "Transactions", href: "/transactions" },
@@ -52,89 +52,51 @@ export function Sidebar() {
 
   return (
     <aside
-      className="w-64 shrink-0 hidden md:flex flex-col"
+      className="w-64 shrink-0 flex flex-col sticky top-0 h-dvh"
       style={{
         background: "linear-gradient(180deg, #060c18 0%, #070e1c 100%)",
         borderRight: "1px solid rgba(59,130,246,0.1)",
       }}
     >
-      {/* Logo */}
-      <div className="h-16 flex items-center px-6 gap-3" style={{ borderBottom: "1px solid rgba(59,130,246,0.1)" }}>
-        <Logo variant="desktop" />
+      <div className="flex flex-col gap-3 px-4 py-4" style={{ borderBottom: "1px solid rgba(59,130,246,0.1)" }}>
+        <div className="flex items-center gap-3">
+          <Logo size="md" />
+        </div>
       </div>
 
-      {/* Nav items */}
-      <div className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
-        {user?.is_admin && (
-          <div className="px-3 pb-2 pt-1">
-            <p className="text-xs font-semibold uppercase tracking-widest text-gray-600">Main</p>
-          </div>
-        )}
-        {items.map((item) => {
-          const isActive = location === item.href;
-          return (
-            <Link key={item.href} href={item.href}>
-              <div className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all cursor-pointer text-sm group",
-                isActive
-                  ? "text-white font-medium"
-                  : "text-gray-500 hover:text-gray-200 hover:bg-white/4"
+      <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
+        {allItems.map((item) => (
+          <Link key={item.href} href={item.href}>
+            <div
+              className={cn(
+                "flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition-colors duration-200",
+                location === item.href
+                  ? "bg-white/10 text-white"
+                  : "text-gray-200 hover:bg-white/10"
               )}
-                style={isActive ? { background: "rgba(59,130,246,0.15)", borderLeft: "2px solid #3b82f6" } : { borderLeft: "2px solid transparent" }}
-              >
-                <item.icon className={cn("h-4 w-4 shrink-0", isActive ? "text-blue-400" : "text-gray-600 group-hover:text-gray-400")} />
-                <span className="flex-1">{item.label}</span>
-                {isActive && <ChevronRight className="h-3 w-3 text-blue-400 opacity-60" />}
-              </div>
-            </Link>
-          );
-        })}
-
-        {user?.is_admin && (
-          <>
-            <div className="px-3 pb-2 pt-4">
-              <p className="text-xs font-semibold uppercase tracking-widest text-gray-600">Admin</p>
+            >
+              <item.icon className="h-4 w-4 text-blue-400 shrink-0" />
+              <span>{item.label}</span>
             </div>
-            {adminItems.map((item) => {
-              const isActive = location === item.href;
-              return (
-                <Link key={item.href} href={item.href}>
-                  <div className={cn(
-                        "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all cursor-pointer text-sm group",
-                        isActive
-                          ? "text-white font-medium"
-                          : "text-gray-500 hover:text-gray-200 hover:bg-white/4"
-                      )}
-                    style={isActive ? { background: "rgba(59,130,246,0.15)", borderLeft: "2px solid #3b82f6" } : { borderLeft: "2px solid transparent" }}
-                  >
-                        <item.icon className={cn("h-4 w-4 shrink-0", isActive ? "text-blue-400" : "text-gray-600 group-hover:text-gray-400")} />
-                    <span className="flex-1">{item.label}</span>
-                    {isActive && <ChevronRight className="h-3 w-3 text-blue-400 opacity-60" />}
-                  </div>
-                </Link>
-              );
-            })}
-          </>
-        )}
-      </div>
+          </Link>
+        ))}
+      </nav>
 
-      {/* User + Logout */}
-      <div className="p-4" style={{ borderTop: "1px solid rgba(59,130,246,0.08)" }}>
+      <div className="border-t border-white/10 p-4">
         {user && (
-          <div className="flex items-center gap-3 px-3 py-2 mb-2 rounded-lg" style={{ background: "rgba(255,255,255,0.03)" }}>
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-              style={{ background: "rgba(59,130,246,0.2)", color: "#60a5fa" }}>
+          <div className="flex items-center gap-3 px-3 py-2 mb-3 rounded-lg bg-white/5">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 bg-blue-500/20 text-blue-300">
               {user.username?.[0]?.toUpperCase() ?? "U"}
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="min-w-0">
               <p className="text-sm text-white font-medium truncate">{user.username}</p>
-              <p className="text-xs text-gray-600 truncate">{user.is_admin ? "Administrator" : "Trader"}</p>
+              <p className="text-xs text-gray-500 truncate">{user.is_admin ? "Administrator" : "Trader"}</p>
             </div>
           </div>
         )}
         <button
           onClick={() => logout()}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm text-gray-600 hover:text-red-400 hover:bg-red-500/10 cursor-pointer"
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm text-gray-300 hover:text-red-300 hover:bg-red-500/10 cursor-pointer"
         >
           <LogOut className="h-4 w-4" />
           Sign out
@@ -145,27 +107,12 @@ export function Sidebar() {
 }
 
 export function AppLayout({ children }: { children: ReactNode }) {
+  const { user, logout } = useAuth();
+
   return (
     <div className="flex h-dvh w-full overflow-hidden" style={{ background: "#070d1a" }}>
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden relative">
-        {/* Animated background behind all content */}
-        <CryptoBackground intensity={0.6} />
-
-        {/* Top bar */}
-        <header
-          className="h-16 flex items-center px-6 sticky top-0 z-20 shrink-0"
-          style={{
-            background: "rgba(7,13,26,0.85)",
-            backdropFilter: "blur(12px)",
-            borderBottom: "1px solid rgba(59,130,246,0.1)",
-          }}
-        >
-          <div className="flex items-center md:hidden">
-            <Logo variant="mobile" />
-          </div>
-        </header>
-
         {/* Main content */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 relative z-10">
           <div className="max-w-7xl mx-auto h-full">

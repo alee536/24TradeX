@@ -1,49 +1,97 @@
-# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+# Production .gitignore for 24TRADEX
+# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
-# compiled output
-dist
-tmp
-out-tsc
-*.tsbuildinfo
-.expo
-.expo-shared
+# ============ PYTHON / DJANGO ============
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
 
-# dependencies
-node_modules
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+/media
+/staticfiles
+.env
 
-# IDEs and editors
-/.idea
+# ============ NODE.JS / FRONTEND ============
+node_modules/
+pnpm-debug.log*
+npm-debug.log*
+yarn-error.log*
+dist/
+*.tgz
+.pnpm-store/
+out-tsc/
+
+# ============ IDE / EDITORS ============
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
 .project
 .classpath
 .c9/
 *.launch
 .settings/
 *.sublime-workspace
+*.swp
+*.swo
+*~
 
-# IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-
-# misc
-/.sass-cache
-/connect.lock
-/coverage
-/libpeerconnection.log
-npm-debug.log
-yarn-error.log
-testem.log
-/typings
-
-# System Files
+# ============ OS ============
 .DS_Store
 Thumbs.db
-
-.cursor/rules/nx-rules.mdc
-.github/instructions/nx.instructions.md
-
-# Replit
 .cache/
 .local/
+
+# ============ TESTING ============
+.pytest_cache/
+.coverage
+htmlcov/
+testem.log
+
+# ============ BUILD ARTIFACTS ============
+tmp/
+*.tsbuildinfo
+.expo/
+.expo-shared/
+/connect.lock
+/libpeerconnection.log
+/typings
+
+# ============ DEVELOPMENT / TEMPORARY ============
+archive/
+attached_assets/
+*.backup
+.env.local
+.env.*.local
+
+# ============ MISC ============
+/.sass-cache

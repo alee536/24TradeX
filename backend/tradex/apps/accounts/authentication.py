@@ -1,8 +1,30 @@
 import jwt
 from django.conf import settings
+from django.contrib.auth.backends import ModelBackend
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 from .models import User
+
+
+class EmailOrUsernameBackend(ModelBackend):
+    def authenticate(self, request, username=None, email=None, password=None, **kwargs):
+        identifier = email or username
+        if not identifier or not password:
+            return None
+
+        try:
+            user = User.objects.get(email__iexact=identifier)
+        except User.DoesNotExist:
+            try:
+                user = User.objects.get(username=identifier)
+            except User.DoesNotExist:
+                return None
+            except User.MultipleObjectsReturned:
+                return None
+
+        if user.check_password(password) and self.user_can_authenticate(user):
+            return user
+        return None
 
 
 class JWTAuthentication(BaseAuthentication):
